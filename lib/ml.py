@@ -74,21 +74,32 @@ class ReduceDim:
 
 
 class Norm:
+    # in case for the zero divisor
     Epsilon = 0.0001
 
     def __init__(self):
         pass
 
     @staticmethod
-    def standardization(data, axis=None, means=None, stds=None):
+    def standardization(data, axis=None,
+                        # For the prediction
+                        means=None, stds=None):
+        # if not for the prediction
         means = np.mean(data, axis=axis) if means is None else means
         stds = np.std(data, axis=axis) if stds is None else stds
+
+        # The formula for normalization
         norm_data = (data - means) / (stds + Norm.Epsilon)
         return norm_data, means, stds
 
     @staticmethod
-    def min_max_scaling(data, axis=None, minimum=None, maximum = None):
+    def min_max_scaling(data, axis=None,
+                        # For the prediction
+                        minimum=None, maximum=None):
+        # if not for the prediction
         minimum = np.min(data, axis=axis) if minimum is None else minimum
         maximum = np.max(data, axis=axis) if maximum is None else maximum
+
+        # THe formula for normalization
         norm_data = (data - minimum) / (maximum - minimum + Norm.Epsilon)
         return norm_data, minimum, maximum
