@@ -8,7 +8,6 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.preprocessing import Normalizer
 
 
 class Cluster:
