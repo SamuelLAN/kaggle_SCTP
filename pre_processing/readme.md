@@ -2,8 +2,12 @@
 
 1. Origin Data
 
-2. Over sampling (target == 1)
+2. Normalize features
 
-3. Under sampling (target == 0)
+3. Over sampling (target == 1)
 
-4. Combine step 2 and 3
+4. Under sampling (target == 0)
+
+5. LDA reduce dimensions
+
+6. combine the above-mentioned methods
