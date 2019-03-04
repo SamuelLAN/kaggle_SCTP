@@ -87,6 +87,10 @@ class Norm:
         means = np.mean(data, axis=axis) if means is None else means
         stds = np.std(data, axis=axis) if stds is None else stds
 
+        if axis:
+            means = np.expand_dims(means, axis)
+            stds = np.expand_dims(stds, axis)
+
         # The formula for normalization
         norm_data = (data - means) / (stds + Norm.Epsilon)
         return norm_data, means, stds
@@ -96,9 +100,13 @@ class Norm:
                         # For the prediction
                         minimum=None, maximum=None):
         # if not for the prediction
-        minimum = np.min(data, axis=axis) if minimum is None else minimum
-        maximum = np.max(data, axis=axis) if maximum is None else maximum
+        minimums = np.min(data, axis=axis) if minimum is None else minimum
+        maximums = np.max(data, axis=axis) if maximum is None else maximum
+
+        if axis:
+            minimums = np.expand_dims(minimums, axis)
+            maximums = np.expand_dims(maximums, axis)
 
         # THe formula for normalization
-        norm_data = (data - minimum) / (maximum - minimum + Norm.Epsilon)
-        return norm_data, minimum, maximum
+        norm_data = (data - minimums) / (maximums - minimums + Norm.Epsilon)
+        return norm_data, minimums, maximums
