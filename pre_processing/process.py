@@ -95,10 +95,10 @@ class Data:
         pass
 
 
-from processors import Processors
-
-# o_data = Data([Processors.min_max_scaling])
-o_data = Data([Processors.standardization])
-train_x, train_y = o_data.train_data()
-
-print(train_x.shape)
+# from processors import Processors
+#
+# # o_data = Data([Processors.min_max_scaling])
+# o_data = Data([Processors.standardization])
+# train_x, train_y = o_data.train_data()
+#
+# print(train_x.shape)
