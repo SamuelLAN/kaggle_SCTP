@@ -84,29 +84,25 @@ class Norm:
                         # For the prediction
                         means=None, stds=None):
         # if not for the prediction
-        means = np.mean(data, axis=axis) if means is None else means
-        stds = np.std(data, axis=axis) if stds is None else stds
-
-        if axis:
-            means = np.expand_dims(means, axis)
-            stds = np.expand_dims(stds, axis)
+        if means is None:
+            means = np.mean(data, axis=axis)
+            stds = np.std(data, axis=axis)
 
         # The formula for normalization
         norm_data = (data - means) / (stds + Norm.Epsilon)
+        del data
         return norm_data, means, stds
 
     @staticmethod
     def min_max_scaling(data, axis=None,
                         # For the prediction
-                        minimum=None, maximum=None):
+                        minimums=None, maximums=None):
         # if not for the prediction
-        minimums = np.min(data, axis=axis) if minimum is None else minimum
-        maximums = np.max(data, axis=axis) if maximum is None else maximum
-
-        if axis:
-            minimums = np.expand_dims(minimums, axis)
-            maximums = np.expand_dims(maximums, axis)
+        if minimums is None:
+            minimums = np.min(data, axis=axis)
+            maximums = np.max(data, axis=axis)
 
         # THe formula for normalization
         norm_data = (data - minimums) / (maximums - minimums + Norm.Epsilon)
+        del data
         return norm_data, minimums, maximums

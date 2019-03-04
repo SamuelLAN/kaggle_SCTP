@@ -1,11 +1,12 @@
 #!/usr/bin/Python
 # -*- coding: utf-8 -*-
 import os
+import sys
 import random
 import numpy as np
 import pandas as pd
 
-PATH_CUR = os.path.split(__file__)[0]
+PATH_CUR = os.path.abspath(os.path.split(__file__)[0])
 PATH_PRJ = os.path.split(PATH_CUR)[0]
 PATH_TRAIN_DATA = os.path.join(PATH_PRJ, 'dataset', 'train.csv')
 
@@ -96,8 +97,8 @@ class Data:
 
 from processors import Processors
 
-o_data = Data([Processors.min_max_scaling])
-# o_data = Data([Processors.standardization])
+# o_data = Data([Processors.min_max_scaling])
+o_data = Data([Processors.standardization])
 train_x, train_y = o_data.train_data()
 
 print(train_x.shape)
