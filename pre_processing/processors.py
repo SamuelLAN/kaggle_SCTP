@@ -4,6 +4,7 @@ import os
 import sys
 import random
 import numpy as np
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
 PATH_CUR = os.path.abspath(os.path.split(__file__)[0])
 PATH_PRJ = os.path.split(PATH_CUR)[0]
@@ -13,11 +14,18 @@ from lib.ml import Norm
 
 
 class Processors:
+    '''
+    Processors for pre-processing data.
+    Every func must have the param (train_x, val_x, test_x, train_y, val_y, test_y).
+                and return (train_x, val_x, test_x, train_y, val_y, test_y).
+    '''
+
     def __init__(self):
         pass
 
     @staticmethod
     def standardization(train_x, val_x, test_x, train_y, val_y, test_y):
+        ''' Norm formula: (x - mean) / std '''
         train_data, means, stds = Norm.standardization(train_x, 0)
         # val_data may be null
         if val_x.any():
@@ -28,6 +36,7 @@ class Processors:
 
     @staticmethod
     def min_max_scaling(train_x, val_x, test_x, train_y, val_y, test_y):
+        ''' Norm formula: (x - min) / (max - min) '''
         train_x, minimums, maximums = Norm.min_max_scaling(train_x, 0)
         # val_data may be null
         if val_x.any():
@@ -38,6 +47,7 @@ class Processors:
 
     @staticmethod
     def under_sample(train_x, val_x, test_x, train_y, val_y, test_y):
+        ''' under sample the majority class '''
         ratio_1_by_0 = 2.0
         num_equal_1 = np.sum(train_y)
         num_equal_0_sample = int(num_equal_1 * ratio_1_by_0)
@@ -74,7 +84,17 @@ class Processors:
         return new_train_x, val_x, test_x, new_train_y, val_y, test_y
 
     @staticmethod
+    def lda(train_x, val_x, test_x, train_y, val_y, test_y):
+        ''' LDA reduce the dimensions of the features '''
+        _lda = LDA()
+        train_x = _lda.fit_transform(train_x, train_y)
+        val_x = np.expand_dims(_lda.predict(val_x), -1)
+        test_x = np.expand_dims(_lda.predict(test_x), -1)
+        return train_x, val_x, test_x, train_y, val_y, test_y
+
+    @staticmethod
     def __shuffle(X, y):
+        ''' shuffle data '''
         # generate shuffled indices
         shuffle_indices = range(len(y))
         random.shuffle(shuffle_indices)

@@ -96,14 +96,14 @@ class Data:
         pass
 
 
-# from processors import Processors
-#
-# o_data = Data([Processors.under_sample])
-# train_x, train_y = o_data.train_data()
-# val_x, val_y = o_data.val_data()
-#
-# print(train_x.shape)
-# print(train_y.shape)
-#
-# print(val_x.shape)
-# print(val_y.shape)
+from processors import Processors
+
+o_data = Data([Processors.lda])
+train_x, train_y = o_data.train_data()
+val_x, val_y = o_data.val_data()
+
+print(train_x.shape)
+print(train_y.shape)
+
+print(val_x.shape)
+print(val_y.shape)
