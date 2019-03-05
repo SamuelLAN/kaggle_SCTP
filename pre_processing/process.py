@@ -78,7 +78,8 @@ class Data:
                 continue
 
             print('running pre-processor %d ... ' % i)
-            self.__train_x, self.__val_x, self.__test_x = processor(self.__train_x, self.__val_x, self.__test_x)
+            self.__train_x, self.__val_x, self.__test_x, self.__train_y, self.__val_y, self.__test_y = \
+                processor(self.__train_x, self.__val_x, self.__test_x, self.__train_y, self.__val_y, self.__test_y)
             print('finish running pre-processor %d' % i)
 
     def train_data(self):
@@ -97,8 +98,12 @@ class Data:
 
 # from processors import Processors
 #
-# # o_data = Data([Processors.min_max_scaling])
-# o_data = Data([Processors.standardization])
+# o_data = Data([Processors.under_sample])
 # train_x, train_y = o_data.train_data()
+# val_x, val_y = o_data.val_data()
 #
 # print(train_x.shape)
+# print(train_y.shape)
+#
+# print(val_x.shape)
+# print(val_y.shape)
