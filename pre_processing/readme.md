@@ -13,6 +13,8 @@
 
 3. Over sampling (target == 1)
 
+    referred paper: [http://lin-baobao.com/static/files/papers/SMOTE_Synthetic_Minority_Over_sampling_Technique.pdf](http://lin-baobao.com/static/files/papers/SMOTE_Synthetic_Minority_Over_sampling_Technique.pdf)
+
 4. Under sampling (target == 0)
 
     Completed.<br>
