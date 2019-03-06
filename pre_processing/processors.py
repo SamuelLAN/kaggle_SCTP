@@ -88,8 +88,8 @@ class Processors:
         ''' LDA reduce the dimensions of the features '''
         _lda = LDA()
         train_x = _lda.fit_transform(train_x, train_y)
-        val_x = np.expand_dims(_lda.predict(val_x), -1)
-        test_x = np.expand_dims(_lda.predict(test_x), -1)
+        val_x = _lda.transform(val_x)
+        test_x = _lda.transform(test_x)
         return train_x, val_x, test_x, train_y, val_y, test_y
 
     @staticmethod

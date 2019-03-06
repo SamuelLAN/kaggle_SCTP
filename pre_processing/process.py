@@ -107,3 +107,5 @@ class Data:
 #
 # print(val_x.shape)
 # print(val_y.shape)
+#
+# print(val_x)
