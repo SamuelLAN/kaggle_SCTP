@@ -1,5 +1,6 @@
 #!/usr/bin/Python
 # -*- coding: utf-8 -*-
+import random
 import numpy as np
 from numpy import linalg as LA
 from sklearn.manifold import TSNE
@@ -8,6 +9,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from utils import echo, k_neighbors
 
 
 class Cluster:
@@ -106,3 +108,99 @@ class Norm:
         norm_data = (data - minimums) / (maximums - minimums + Norm.Epsilon)
         del data
         return norm_data, minimums, maximums
+
+
+class Sampling:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def smote(X, y, minority_value, n_neighbors, synthetic_num_per_point):
+        ''' Over-sampling data '''
+        # store the synthetic minority data
+        ar_synthetic = []
+
+        # find out all the data of the minor class
+        ar_minority = X[np.argwhere(y == minority_value)[:, 0]]
+        len_minority = len(ar_minority)
+
+        # TODO delete it
+        import time
+        print(time.localtime())
+
+        # calculate the k nearest neighbors
+        _k_neighbors = k_neighbors(ar_minority, n_neighbors)
+
+        # TODO delete it
+        print(time.localtime())
+
+        # traverse the minority data
+        for i in range(len_minority):
+            # show the progress
+            if i % 10 == 0:
+                progress = float(i + 1) / len_minority * 100.0
+                echo('Synthetic progress: %.2f   \r' % progress, False)
+
+            # generate synthetic_num_per_point times minority data
+            for j in range(synthetic_num_per_point):
+                rand_index = random.randint(1, n_neighbors)
+
+                # calculate the difference between this point to the nearest point
+                diff = ar_minority[_k_neighbors[i][rand_index][0]] - ar_minority[i]
+                gap = random.random()
+
+                # add the new synthetic data to ar_synthetic
+                ar_synthetic.append(ar_minority[i] + gap * diff)
+
+        return ar_synthetic
+
+    @staticmethod
+    def under_sample(X, y, majority_value, ratio_major_by_minor=1.5):
+        # calculate the number of majority that need to be sampled
+        len_major = np.sum(y == majority_value)
+        len_minor = len(y) - len_major
+        len_sample_major = int(len_minor * ratio_major_by_minor)
+
+        # store the data after under sampling
+        new_x = []
+        new_y = []
+
+        # record the number of data which has sampled
+        num_has_sample_major = 0
+        num_has_sample_minor = 0
+
+        # start sample data
+        for i in range(len(y)):
+            # if complete sampling, break
+            if num_has_sample_minor >= len_minor and num_has_sample_major >= len_sample_major:
+                break
+
+            # record the number of data sampled
+            if y[i] == majority_value:
+                if num_has_sample_major >= len_sample_major:
+                    continue
+                num_has_sample_major += 1
+            else:
+                num_has_sample_minor += 1
+
+            # save the sample data
+            new_x.append(X[i])
+            new_y.append(y[i])
+
+        return Sampling.shuffle(new_x, new_y)
+
+    @staticmethod
+    def shuffle(X, y):
+        ''' shuffle data '''
+        # generate shuffled indices
+        shuffle_indices = range(len(y))
+        random.shuffle(shuffle_indices)
+
+        # according to the shuffled indices, generate new data
+        new_x = []
+        new_y = []
+        for i in shuffle_indices:
+            new_x.append(X[i])
+            new_y.append(y[i])
+
+        return np.asarray(new_x), np.asarray(new_y)

@@ -10,7 +10,7 @@ PATH_CUR = os.path.abspath(os.path.split(__file__)[0])
 PATH_PRJ = os.path.split(PATH_CUR)[0]
 sys.path.append(PATH_PRJ)
 
-from lib.ml import Norm
+from lib.ml import Norm, Sampling
 
 
 class Processors:
@@ -46,42 +46,33 @@ class Processors:
         return train_x, val_x, test_x, train_y, val_y, test_y
 
     @staticmethod
+    def smote(train_x, val_x, test_x, train_y, val_y, test_y):
+        # the ratio of sampling minority
+        ratio_over_sample = 100.0
+
+        print('Start smote ... ')
+
+        # over-sample by smote
+        synthetic_train_x = Sampling.smote(train_x, train_y, 0, 5, int(ratio_over_sample / 100.0))
+        synthetic_train_y = np.ones([len(synthetic_train_x), ])
+
+        print('Finish smote')
+
+        # add the over-sampling data to train data
+        train_x = np.vstack([train_x, synthetic_train_x])
+        train_y = np.vstack([train_y, synthetic_train_y])
+
+        # shuffle train data
+        train_x, train_y = Sampling.shuffle(train_x, train_y)
+
+        return train_x, val_x, test_x, train_y, val_y, test_y
+
+    @staticmethod
     def under_sample(train_x, val_x, test_x, train_y, val_y, test_y):
         ''' under sample the majority class '''
-        ratio_1_by_0 = 2.0
-        num_equal_1 = np.sum(train_y)
-        num_equal_0_sample = int(num_equal_1 * ratio_1_by_0)
-
-        # store the data after under sampling
-        new_train_x = []
-        new_train_y = []
-
-        # record the number of data which has sampled
-        num_has_sample_0 = 0
-        num_has_sample_1 = 0
-
-        # start sample data
-        for i in range(len(train_y)):
-            # if complete sampling, break
-            if num_has_sample_1 >= num_equal_1 and num_has_sample_0 >= num_equal_0_sample:
-                break
-
-            # record the number of data sampled
-            if train_y[i] == 0:
-                if num_has_sample_0 >= num_equal_0_sample:
-                    continue
-                num_has_sample_0 += 1
-            else:
-                num_has_sample_1 += 1
-
-            # save the sample data
-            new_train_x.append(train_x[i])
-            new_train_y.append(train_y[i])
-
-        # shuffle data
-        new_train_x, new_train_y = Processors.__shuffle(new_train_x, new_train_y)
-
-        return new_train_x, val_x, test_x, new_train_y, val_y, test_y
+        ratio_major_by_minor = 1.5
+        train_x, train_y = Sampling.under_sample(train_x, train_y, 0, ratio_major_by_minor)
+        return train_x, val_x, test_x, train_y, val_y, test_y
 
     @staticmethod
     def lda(train_x, val_x, test_x, train_y, val_y, test_y):
@@ -91,19 +82,3 @@ class Processors:
         val_x = _lda.transform(val_x)
         test_x = _lda.transform(test_x)
         return train_x, val_x, test_x, train_y, val_y, test_y
-
-    @staticmethod
-    def __shuffle(X, y):
-        ''' shuffle data '''
-        # generate shuffled indices
-        shuffle_indices = range(len(y))
-        random.shuffle(shuffle_indices)
-
-        # according to the shuffled indices, generate new data
-        new_x = []
-        new_y = []
-        for i in shuffle_indices:
-            new_x.append(X[i])
-            new_y.append(y[i])
-
-        return np.asarray(new_x), np.asarray(new_y)

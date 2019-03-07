@@ -15,6 +15,11 @@
 
     referred paper: [http://lin-baobao.com/static/files/papers/SMOTE_Synthetic_Minority_Over_sampling_Technique.pdf](http://lin-baobao.com/static/files/papers/SMOTE_Synthetic_Minority_Over_sampling_Technique.pdf)
 
+    <img src="./img/SMOTE.png" width=500 height=568><br>
+
+    Completed.<br>
+    Please see the funcs of "smote" in [processors.py](processors.py) for the details.
+
 4. Under sampling (target == 0)
 
     Completed.<br>

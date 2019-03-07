@@ -1,10 +1,10 @@
 #!/usr/bin/Python
 # -*- coding: utf-8 -*-
 import os
-import sys
 import random
 import numpy as np
 import pandas as pd
+from six.moves import cPickle as pickle
 
 PATH_CUR = os.path.abspath(os.path.split(__file__)[0])
 PATH_PRJ = os.path.split(PATH_CUR)[0]
@@ -96,16 +96,16 @@ class Data:
         pass
 
 
-# from processors import Processors
-#
-# o_data = Data([Processors.lda])
-# train_x, train_y = o_data.train_data()
-# val_x, val_y = o_data.val_data()
-#
-# print(train_x.shape)
-# print(train_y.shape)
-#
-# print(val_x.shape)
-# print(val_y.shape)
-#
-# print(val_x)
+from processors import Processors
+
+o_data = Data([Processors.smote])
+train_x, train_y = o_data.train_data()
+val_x, val_y = o_data.val_data()
+
+print(train_x.shape)
+print(train_y.shape)
+
+print(val_x.shape)
+print(val_y.shape)
+
+print(train_x)
