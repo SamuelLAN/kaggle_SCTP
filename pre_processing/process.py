@@ -13,22 +13,20 @@ PATH_CACHE_DIR = os.path.join(PATH_CUR, 'cache')
 
 
 class Data:
-    def __init__(self, processors=[], train_size=0.8, val_size=0.1, test_size=0.1, cache_name=''):
+    def __init__(self, processors=[], train_size=0.8, val_size=0.1, test_size=0.1, cache_name='', new_cache_name=''):
         # get cache path
         cache_name = cache_name if cache_name else 'data'
         self.__cache_path = os.path.join(PATH_CACHE_DIR, cache_name + '.pkl')
 
         print('Start loading data from cache %s ...' % self.__cache_path)
 
-        # if cache exist, use cache and return
-        if self.__use_cache():
-            print('Finish loading')
-            return
+        has_cache = self.__use_cache()
 
-        print('No cache\n\nStart loading data from %s ...' % PATH_TRAIN_DATA)
+        if not has_cache:
+            print('No cache\n\nStart loading data from %s ...' % PATH_TRAIN_DATA)
 
-        # load data
-        self.__load(train_size, val_size, train_size)
+            # load data
+            self.__load(train_size, val_size, train_size)
 
         print('Finish loading data\n\nStart pre-processing data ...')
 
@@ -37,7 +35,11 @@ class Data:
 
         print('Finish pre-processing\n\nStart caching data ...')
 
-        self.__cache()
+        if not has_cache or new_cache_name:
+            if new_cache_name:
+                self.__cache_path = os.path.join(PATH_CACHE_DIR, new_cache_name + '.pkl')
+
+            self.__cache()
 
         print('Finish caching')
 
@@ -138,7 +140,7 @@ class Data:
 
 from processors import Processors
 
-o_data = Data([Processors.smote])
+o_data = Data(cache_name='origin')
 train_x, train_y = o_data.train_data()
 val_x, val_y = o_data.val_data()
 
