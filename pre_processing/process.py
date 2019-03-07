@@ -9,12 +9,42 @@ from six.moves import cPickle as pickle
 PATH_CUR = os.path.abspath(os.path.split(__file__)[0])
 PATH_PRJ = os.path.split(PATH_CUR)[0]
 PATH_TRAIN_DATA = os.path.join(PATH_PRJ, 'dataset', 'train.csv')
+PATH_CACHE_DIR = os.path.join(PATH_CUR, 'cache')
 
 
 class Data:
-    def __init__(self, processors=[], train_size=0.8, val_size=0.1, test_size=0.1):
-        print('Start loading data from %s ...' % PATH_TRAIN_DATA)
+    def __init__(self, processors=[], train_size=0.8, val_size=0.1, test_size=0.1, cache_name=''):
+        # get cache path
+        cache_name = cache_name if cache_name else 'data'
+        self.__cache_path = os.path.join(PATH_CACHE_DIR, cache_name + '.pkl')
+
+        print('Start loading data from cache %s ...' % self.__cache_path)
+
+        # if cache exist, use cache and return
+        if self.__use_cache():
+            print('Finish loading')
+            return
+
+        print('No cache\n\nStart loading data from %s ...' % PATH_TRAIN_DATA)
+
+        # load data
+        self.__load(train_size, val_size, train_size)
+
+        print('Finish loading data\n\nStart pre-processing data ...')
+
+        # pre-process data
+        self.__process_data(processors)
+
+        print('Finish pre-processing\n\nStart caching data ...')
+
+        self.__cache()
+
+        print('Finish caching')
+
+    def __load(self, train_size, val_size, test_size):
+        ''' load data '''
         data = np.asarray(pd.read_csv(PATH_TRAIN_DATA).iloc[:, :])
+
         print('shuffling data ...')
         data = self.__shuffle_data(data)
 
@@ -31,12 +61,6 @@ class Data:
 
         # delete useless data
         del data, train_data, val_data, test_data
-        print('Finish loading data\n\nStart pre-processing data ...')
-
-        # pre-process data
-        self.__process_data(processors)
-
-        print('Finish pre-processing')
 
     @staticmethod
     def __shuffle_data(data):
@@ -81,6 +105,22 @@ class Data:
             self.__train_x, self.__val_x, self.__test_x, self.__train_y, self.__val_y, self.__test_y = \
                 processor(self.__train_x, self.__val_x, self.__test_x, self.__train_y, self.__val_y, self.__test_y)
             print('finish running pre-processor %d' % i)
+
+    def __cache(self):
+        ''' cache data after pre-processing '''
+        with open(self.__cache_path, 'wb') as f:
+            pickle.dump((self.__train_x, self.__val_x, self.__test_x,
+                         self.__train_y, self.__val_y, self.__test_y), f, pickle.HIGHEST_PROTOCOL)
+
+    def __use_cache(self):
+        ''' load from cache '''
+        if not os.path.isfile(self.__cache_path):
+            return False
+
+        with open(self.__cache_path, 'rb') as f:
+            data = pickle.load(f)
+        self.__train_x, self.__val_x, self.__test_x, self.__train_y, self.__val_y, self.__test_y = data
+        return True
 
     def train_data(self):
         return self.__train_x, self.__train_y
