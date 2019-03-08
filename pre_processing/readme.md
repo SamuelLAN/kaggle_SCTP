@@ -31,3 +31,7 @@
     Please see the func of "lda" in [processors.py](processors.py) for the details.
 
 6. combine the above-mentioned methods
+
+----
+
+Add cache so that I do not need to repeat the procedure of the pre-processing, saving much time.
