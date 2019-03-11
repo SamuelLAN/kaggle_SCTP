@@ -26,7 +26,7 @@ class Data:
             print('No cache\n\nStart loading data from %s ...' % PATH_TRAIN_DATA)
 
             # load data
-            self.__load(train_size, val_size, train_size)
+            self.__load(train_size, val_size, test_size)
 
         print('Finish loading data\n\nStart pre-processing data ...')
 
@@ -41,7 +41,7 @@ class Data:
 
             self.__cache()
 
-        print('Finish caching')
+        print('Finish caching\n')
 
     def __load(self, train_size, val_size, test_size):
         ''' load data '''
@@ -138,16 +138,20 @@ class Data:
         pass
 
 
-from processors import Processors
-
-o_data = Data([], cache_name='origin', new_cache_name='')
-train_x, train_y = o_data.train_data()
-val_x, val_y = o_data.val_data()
-
-print(train_x.shape)
-print(train_y.shape)
-
-print(val_x.shape)
-print(val_y.shape)
-
-print(train_x)
+# from processors import Processors
+#
+# o_data = Data([Processors.standardization], cache_name='under_sample_1.5', new_cache_name='under_sample_1.5_standardization')
+# train_x, train_y = o_data.train_data()
+# val_x, val_y = o_data.val_data()
+# test_x, test_y = o_data.test_data()
+#
+# print(train_x.shape)
+# print(train_y.shape)
+#
+# print(val_x.shape)
+# print(val_y.shape)
+#
+# print(test_x.shape)
+# print(test_y.shape)
+#
+# print(train_x)
