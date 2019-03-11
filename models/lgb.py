@@ -36,6 +36,10 @@ class LGB:
         param:  max_depth=-1, n_estimators=999999, learning_rate=0.02,
                 colsample_bytree=0.3, num_leaves=2, objective='binary', boosting_type='goss'
         auc:    origin_min_max_scaling: 0.901438
+        8).
+        param:  max_depth=-1, n_estimators=999999, learning_rate=0.02,
+                colsample_bytree=0.3, num_leaves=5, objective='binary', boosting_type='goss'
+        auc:    origin_min_max_scaling: 0.900925
     '''
 
     def __init__(self, **kwargs):
@@ -43,7 +47,7 @@ class LGB:
                                           n_estimators=999999,
                                           learning_rate=0.02,
                                           colsample_bytree=0.3,
-                                          num_leaves=2,
+                                          num_leaves=5,
                                           boosting_type='goss',  # 'gbdt',
                                           metric='auc',
                                           objective='binary',
