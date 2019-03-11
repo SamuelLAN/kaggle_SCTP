@@ -140,7 +140,7 @@ class Data:
 
 from processors import Processors
 
-o_data = Data([], cache_name='origin', new_cache_name='')
+o_data = Data([Processors.smote], cache_name='origin', new_cache_name='smote_1')
 train_x, train_y = o_data.train_data()
 val_x, val_y = o_data.val_data()
 test_x, test_y = o_data.test_data()
