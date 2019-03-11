@@ -1,11 +1,20 @@
 #!/usr/bin/Python
 # -*- coding: utf-8 -*-
+import os
 import sys
 import numpy as np
+
+PATH_CUR = os.path.abspath(os.path.split(__file__)[0])
+PATH_PRJ = os.path.split(PATH_CUR)[0]
 
 
 def k_neighbors(X, k):
     ''' Calculate the K nearest neighbors '''
+    # use cache
+    cache_path = os.path.join(PATH_PRJ, 'pre_processing', 'cache', 'k_neighbors_%s.npy' % k)
+    if os.path.isfile(cache_path):
+        return np.load(cache_path)
+
     results = []  # save results and return it after the func finishes
     len_x = len(X)
 
@@ -31,6 +40,9 @@ def k_neighbors(X, k):
 
         # append the nearest neighbor to results
         results.append(_k_neighbors)
+
+    # save results to cache
+    np.save(cache_path, results)
 
     return results
 
