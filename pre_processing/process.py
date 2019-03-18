@@ -9,6 +9,7 @@ from six.moves import cPickle as pickle
 PATH_CUR = os.path.abspath(os.path.split(__file__)[0])
 PATH_PRJ = os.path.split(PATH_CUR)[0]
 PATH_TRAIN_DATA = os.path.join(PATH_PRJ, 'dataset', 'train.csv')
+PATH_TEST_DATA = os.path.join(PATH_PRJ, 'dataset', 'test.csv')
 PATH_CACHE_DIR = os.path.join(PATH_CUR, 'cache')
 
 
@@ -27,6 +28,7 @@ class Data:
 
             # load data
             self.__load(train_size, val_size, test_size)
+            self.__load_test_data()
 
         print('Finish loading data\n\nStart pre-processing data ...')
 
@@ -42,6 +44,10 @@ class Data:
             self.__cache()
 
         print('Finish caching\n')
+
+        # for get data in batch
+        self.__cur_index = 0
+        self.__len = len(self.__train_y)
 
     def __load(self, train_size, val_size, test_size):
         ''' load data '''
@@ -63,6 +69,14 @@ class Data:
 
         # delete useless data
         del data, train_data, val_data, test_data
+
+    def __load_test_data(self):
+        print('loading test data ...')
+        data = np.asarray(pd.read_csv(PATH_TEST_DATA).iloc[:, :])
+        self.__real_test_x = data[:, 1:]
+        self.__real_test_ids = data[:, 0]
+        del data
+        print('finish loading test data')
 
     @staticmethod
     def __shuffle_data(data):
@@ -104,15 +118,18 @@ class Data:
                 continue
 
             print('running pre-processor %d ... ' % i)
-            self.__train_x, self.__val_x, self.__test_x, self.__train_y, self.__val_y, self.__test_y = \
-                processor(self.__train_x, self.__val_x, self.__test_x, self.__train_y, self.__val_y, self.__test_y)
+            self.__train_x, self.__val_x, self.__test_x, \
+            self.__train_y, self.__val_y, self.__test_y, self.__real_test_x = \
+                processor(self.__train_x, self.__val_x, self.__test_x,
+                          self.__train_y, self.__val_y, self.__test_y, self.__real_test_x)
             print('finish running pre-processor %d' % i)
 
     def __cache(self):
         ''' cache data after pre-processing '''
         with open(self.__cache_path, 'wb') as f:
             pickle.dump((self.__train_x, self.__val_x, self.__test_x,
-                         self.__train_y, self.__val_y, self.__test_y), f, pickle.HIGHEST_PROTOCOL)
+                         self.__train_y, self.__val_y, self.__test_y,
+                         self.__real_test_x, self.__real_test_ids), f, pickle.HIGHEST_PROTOCOL)
 
     def __use_cache(self):
         ''' load from cache '''
@@ -121,7 +138,14 @@ class Data:
 
         with open(self.__cache_path, 'rb') as f:
             data = pickle.load(f)
-        self.__train_x, self.__val_x, self.__test_x, self.__train_y, self.__val_y, self.__test_y = data
+
+        # the occasion of "len(data) == 6" is used for updating old cache data
+        if len(data) == 6:
+            self.__train_x, self.__val_x, self.__test_x, self.__train_y, self.__val_y, self.__test_y = data
+            self.__load_test_data()
+        else:
+            self.__train_x, self.__val_x, self.__test_x, self.__train_y, self.__val_y, self.__test_y, \
+            self.__real_test_x, self.__real_test_ids = data
         return True
 
     def train_data(self):
@@ -133,14 +157,47 @@ class Data:
     def test_data(self):
         return self.__test_x, self.__test_y
 
-    def next_batch(self):
+    def real_test_data(self):
+        return self.__real_test_x, self.__real_test_ids
+
+    def next_batch(self, batch_size):
         ''' Get train data batch by batch '''
-        pass
+        start_index = self.__cur_index
+        end_index = self.__cur_index + batch_size
+        left_num = 0
+
+        if end_index >= self.__len:
+            left_num = end_index - self.__len
+            end_index = self.__len
+
+        X = self.__train_x[start_index: end_index]
+        y = self.__train_y[start_index: end_index]
+
+        if not left_num:
+            self.__cur_index = end_index if end_index < self.__len else 0
+            return X, y
+
+        while left_num:
+            end_index = left_num
+            if end_index > self.__len:
+                left_num = end_index - self.__len
+                end_index = self.__len
+            else:
+                left_num = 0
+
+            left_x = self.__train_x[: end_index]
+            left_y = self.__train_y[: end_index]
+            X = np.vstack([X, left_x])
+            y = np.vstack([y, left_y])
+
+        self.__cur_index = end_index if end_index < self.__len else 0
+        return X, y
 
 
 from processors import Processors
 
-o_data = Data([Processors.smote], cache_name='origin', new_cache_name='smote_1')
+o_data = Data([Processors.standardization], cache_name='smote_2.0_under_sample_1.5', new_cache_name='smote_2.0_under_sample_1.5_standardization')
+
 train_x, train_y = o_data.train_data()
 val_x, val_y = o_data.val_data()
 test_x, test_y = o_data.test_data()

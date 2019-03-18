@@ -124,15 +124,8 @@ class Sampling:
         ar_minority = X[np.argwhere(y == minority_value)[:, 0]]
         len_minority = len(ar_minority)
 
-        # TODO delete it
-        import time
-        print(time.localtime())
-
         # calculate the k nearest neighbors
         _k_neighbors = k_neighbors(ar_minority, n_neighbors)
-
-        # TODO delete it
-        print(time.localtime())
 
         # traverse the minority data
         for i in range(len_minority):
@@ -146,13 +139,13 @@ class Sampling:
                 rand_index = random.randint(1, n_neighbors)
 
                 # calculate the difference between this point to the nearest point
-                diff = ar_minority[_k_neighbors[i][rand_index][0]] - ar_minority[i]
+                diff = ar_minority[int(_k_neighbors[i][rand_index][0])] - ar_minority[i]
                 gap = random.random()
 
                 # add the new synthetic data to ar_synthetic
                 ar_synthetic.append(ar_minority[i] + gap * diff)
 
-        return ar_synthetic
+        return np.asarray(ar_synthetic, dtype=np.float32)
 
     @staticmethod
     def under_sample(X, y, majority_value, ratio_major_by_minor=1.5):
