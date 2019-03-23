@@ -175,7 +175,7 @@ class Data:
 
         if not left_num:
             self.__cur_index = end_index if end_index < self.__len else 0
-            return X, y
+            return X, np.eye(2, dtype=np.float32)[y]
 
         while left_num:
             end_index = left_num
@@ -187,28 +187,28 @@ class Data:
 
             left_x = self.__train_x[: end_index]
             left_y = self.__train_y[: end_index]
+
             X = np.vstack([X, left_x])
-            y = np.vstack([y, left_y])
+            y = np.hstack([y, left_y])
 
         self.__cur_index = end_index if end_index < self.__len else 0
-        return X, y
+        return X, np.eye(2, dtype=np.float32)[y]
 
 
-from processors import Processors
-
-o_data = Data([Processors.standardization], cache_name='smote_2.0_under_sample_1.5', new_cache_name='smote_2.0_under_sample_1.5_standardization')
-
-train_x, train_y = o_data.train_data()
-val_x, val_y = o_data.val_data()
-test_x, test_y = o_data.test_data()
-
-print(train_x.shape)
-print(train_y.shape)
-
-print(val_x.shape)
-print(val_y.shape)
-
-print(test_x.shape)
-print(test_y.shape)
-
-print(train_x)
+# from processors import Processors
+#
+# o_data = Data([], cache_name='origin_4_standardization_min_max_scaling', new_cache_name='')
+# train_x, train_y = o_data.train_data()
+# val_x, val_y = o_data.val_data()
+# test_x, test_y = o_data.test_data()
+#
+# print(train_x.shape)
+# print(train_y.shape)
+#
+# print(val_x.shape)
+# print(val_y.shape)
+#
+# print(test_x.shape)
+# print(test_y.shape)
+#
+# print(train_x)

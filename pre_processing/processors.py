@@ -49,12 +49,12 @@ class Processors:
     @staticmethod
     def smote(train_x, val_x, test_x, train_y, val_y, test_y, real_test_x):
         # the ratio of sampling minority
-        ratio_over_sample = 100.0
+        ratio_over_sample = 20.0
 
         print('Start smote ... ')
 
         # over-sample by smote
-        synthetic_train_x = Sampling.smote(train_x, train_y, 1, 5, int(ratio_over_sample / 100.0))
+        synthetic_train_x = Sampling.smote(train_x, train_y, 1, 5, float(ratio_over_sample / 100.0))
         synthetic_train_y = np.ones([len(synthetic_train_x), ])
 
         print('Finish smote')
@@ -84,4 +84,20 @@ class Processors:
             val_x = _lda.transform(val_x)
         test_x = _lda.transform(test_x)
         real_test_x = _lda.transform(real_test_x)
+        return train_x, val_x, test_x, train_y, val_y, test_y, real_test_x
+
+    @staticmethod
+    def add_lda(train_x, val_x, test_x, train_y, val_y, test_y, real_test_x):
+        ''' LDA reduce the dimensions of the features; and add this lda feature to the origin features '''
+        _lda = LDA()
+        train_lda = _lda.fit_transform(train_x, train_y)
+        if val_x.any():
+            val_lda = _lda.transform(val_x)
+            val_x = np.hstack([val_x, val_lda])
+        test_lda = _lda.transform(test_x)
+        real_test_lda = _lda.transform(real_test_x)
+
+        train_x = np.hstack([train_x, train_lda])
+        test_x = np.hstack([test_x, test_lda])
+        real_test_x = np.hstack([real_test_x, real_test_lda])
         return train_x, val_x, test_x, train_y, val_y, test_y, real_test_x

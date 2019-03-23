@@ -81,16 +81,16 @@ class LGB:
                          verbose=True,
                          early_stopping_rounds=1000)
 
+    def predict(self, X):
+        if self.__has_train:
+            return self.__model.predict(X)
+        return self.__model.predict_proba(X)[:, 1]
+
     def test_auc(self, test_x, test_y):
         test_output = self.predict(test_x)
         auc = roc_auc_score(test_y, test_output)
         print('test auc: %f' % auc)
         return auc
-
-    def predict(self, X):
-        if self.__has_train:
-            return self.__model.predict(X)
-        return self.__model.predict_proba(X)[:, 1]
 
     def save(self):
         if self.__has_train:

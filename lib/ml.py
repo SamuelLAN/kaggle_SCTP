@@ -127,23 +127,27 @@ class Sampling:
         # calculate the k nearest neighbors
         _k_neighbors = k_neighbors(ar_minority, n_neighbors)
 
-        # traverse the minority data
-        for i in range(len_minority):
+        len_synthetic_num = int(len_minority * synthetic_num_per_point)
+        indices_minor = range(len_minority)
+        random.shuffle(indices_minor)
+
+        # Here I modify the smote algorithm so that it can over-sample whatever times (float) of the number of minority
+        for i in range(len_synthetic_num):
             # show the progress
             if i % 10 == 0:
                 progress = float(i + 1) / len_minority * 100.0
                 echo('Synthetic progress: %.2f   \r' % progress, False)
 
-            # generate synthetic_num_per_point times minority data
-            for j in range(synthetic_num_per_point):
-                rand_index = random.randint(1, n_neighbors)
+            index = i % len_minority
 
-                # calculate the difference between this point to the nearest point
-                diff = ar_minority[int(_k_neighbors[i][rand_index][0])] - ar_minority[i]
-                gap = random.random()
+            rand_index = random.randint(1, n_neighbors)
 
-                # add the new synthetic data to ar_synthetic
-                ar_synthetic.append(ar_minority[i] + gap * diff)
+            # calculate the difference between this point to the nearest point
+            diff = ar_minority[int(_k_neighbors[index][rand_index][0])] - ar_minority[index]
+            gap = random.random()
+
+            # add the new synthetic data to ar_synthetic
+            ar_synthetic.append(ar_minority[index] + gap * diff)
 
         return np.asarray(ar_synthetic, dtype=np.float32)
 
