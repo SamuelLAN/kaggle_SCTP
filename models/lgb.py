@@ -69,8 +69,7 @@ class LGB:
                                               num_leaves=2,
                                               boosting_type='goss',  # 'gbdt',
                                               metric='auc',
-                                              # objective='binary',
-                                              objective='regression',
+                                              objective='binary',
                                               reg_lambda=0.1,
                                               n_jobs=-1)
 

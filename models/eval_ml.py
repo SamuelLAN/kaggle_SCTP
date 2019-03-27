@@ -21,7 +21,7 @@ class EvalML(Eval):
         auc:
     '''
 
-    MODEL_NAME = 'lgb_obj_regression'
+    MODEL_NAME = 'lgb'
     DATA_CACHE_NAME = 'origin_7_min_max_scaling_aug_4.0_standardization'
     PROCESSOR_LIST = []
 
