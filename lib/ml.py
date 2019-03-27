@@ -115,6 +115,59 @@ class Sampling:
         pass
 
     @staticmethod
+    def __shuffle_same_dim(X):
+        indices = np.arange(X.shape[0])
+        for column in range(X.shape[1]):
+            np.random.shuffle(indices)
+            X[:, column] = X[indices][:, column]
+        return X
+
+    @staticmethod
+    def shuffle_same_dim(X, y, minority_value, ratio_gen):
+        # find out all the data of the minor class
+        ar_minority = np.copy(X[np.argwhere(y == minority_value)[:, 0]])
+        len_minority = len(ar_minority)
+
+        # calculate the number of data that need to be up-sample
+        len_sample_num = int(len_minority * ratio_gen)
+
+        ar_aug = []
+        for i in range(len_sample_num):
+            # show the progress
+            if i % 10 == 0:
+                progress = float(i + 1) / len_sample_num * 100.0
+                echo('Shuffle progress: %.2f   \r' % progress, False)
+
+            if i % len_minority == 0:
+                ar_minority = Sampling.__shuffle_same_dim(ar_minority)
+            ar_aug.append(ar_minority[i % len_minority])
+
+        return ar_aug
+
+    @staticmethod
+    def duplicate(X, y, minority_value, ratio_duplicate):
+        ar_aug = []
+
+        # find out all the data of the minor class
+        ar_minority = X[np.argwhere(y == minority_value)[:, 0]]
+        len_minority = len(ar_minority)
+
+        len_dup_num = int(len_minority * ratio_duplicate)
+        indices_minor = range(len_minority)
+        random.shuffle(indices_minor)
+
+        for i in range(len_dup_num):
+            # show the progress
+            if i % 10 == 0:
+                progress = float(i + 1) / len_dup_num * 100.0
+                echo('Duplication progress: %.2f   \r' % progress, False)
+
+            index = i % len_minority
+            ar_aug.append(ar_minority[index])
+
+        return ar_aug
+
+    @staticmethod
     def smote(X, y, minority_value, n_neighbors, synthetic_num_per_point):
         ''' Over-sampling data '''
         # store the synthetic minority data
@@ -156,7 +209,7 @@ class Sampling:
         # calculate the number of majority that need to be sampled
         len_major = np.sum(y == majority_value)
         len_minor = len(y) - len_major
-        len_sample_major = int(len_minor * ratio_major_by_minor)
+        len_sample_major = int(len_major * ratio_major_by_minor)
 
         # store the data after under sampling
         new_x = []

@@ -1,63 +1,39 @@
 #!/usr/bin/Python
 # -*- coding: utf-8 -*-
+import numpy as np
 import tensorflow as tf
-from lib.nn import NN
 from sklearn.metrics import roc_auc_score
+from lib.nn import NN
+from config.cnn import LeNet as model_config
 
 
-class ShallowNN(NN):
-    ''' Shallow neural networks '''
-    MODEL_NAME = 'ShallowNN'
+class LeNet(NN):
+    ''' Two-dimension Convolution Neural Networks '''
+    MODEL_NAME = 'LeNet'
 
     # parameters that need to be tuned
-    BATCH_SIZE = 200
+    BATCH_SIZE = 25
     EPOCH_TIMES = 200
-    BASE_LEARNING_RATE = 0.00001
+    BASE_LEARNING_RATE = 0.00003
     DECAY_RATE = 0.05
-    EARLY_STOP_EPOCH = 20
+    EARLY_STOP_EPOCH = 15
     KEEP_PROB = 0.5
+    REG_BETA = 0.25
+    WEIGHT_MAJOR = 8.0
+    WEIGHT_MINOR = 0.3
+    USE_BN = True
 
     # fix params
-    INPUT_DIM = 200
     NUM_CLASSES = 2
 
     SHOW_PROGRESS_FREQUENCY = 100
 
-    MODEL = [
-        {
-            'name': 'fc1',
-            'type': 'fc',
-            'filter_out': 200,
-            'trainable': True,
-            'BN': True,
-        },
-        {
-            'name': 'dropout',
-            'type': 'dropout',
-        },
-        {
-            'name': 'fc2',
-            'type': 'fc',
-            'filter_out': 100,
-            'trainable': True,
-            'BN': True,
-        },
-        {
-            'name': 'dropout',
-            'type': 'dropout',
-        },
-        {
-            'name': 'softmax',
-            'type': 'fc',
-            'filter_out': NUM_CLASSES,
-            'activate': False,
-        },
-    ]
+    MODEL = model_config['model']
 
     def init(self):
         ''' customize initialization '''
         # input and label
-        self.__X = tf.placeholder(tf.float32, [None, self.INPUT_DIM], name='X')
+        self.__X = tf.placeholder(tf.float32, model_config['input_shape'], name='X')
         self.__y = tf.placeholder(tf.float32, [None, self.NUM_CLASSES], name='y')
 
         # for dropout
@@ -71,26 +47,33 @@ class ShallowNN(NN):
             self.__rebuild_model()
         else:
             self.__output = self.parse_model(self.__X)
+        self.__output_prob = tf.nn.softmax(self.__output)
 
     def __rebuild_model(self):
         self.__output = self.parse_model_rebuild(self.__X)
+        self.__output_prob = tf.nn.softmax(self.__output)
 
     def __get_loss(self):
         with tf.name_scope('loss'):
+            # give the point that target == 1 bigger weight
+            y_column_1 = tf.cast(self.__y[:, 1], tf.float32)
+            weight = y_column_1 * self.WEIGHT_MAJOR + (-y_column_1 + 1) * self.WEIGHT_MINOR
+
+            # softmax with weight
             self.__loss = tf.reduce_mean(
-                tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.__output, labels=self.__y)
+                tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.__output, labels=self.__y) * weight
             )
 
-            # self.__loss = self.regularize_trainable(self.__loss, 0.1)
+            self.__loss = self.regularize(self.__loss, self.REG_BETA)
 
     def __summary(self):
         with tf.name_scope('summary'):
-            self.__mean_loss = tf.placeholder(tf.float32, name='mean_loss')
-            self.__mean_auc = tf.placeholder(tf.float32, name='mean_auc')
+            self.__mean_loss = tf.placeholder(tf.float32, name='loss')
+            self.__mean_auc = tf.placeholder(tf.float32, name='auc')
 
             tf.summary.scalar('learning_rate', self.__learning_rate)
             tf.summary.scalar('mean_auc', self.__mean_auc)
-            tf.summary.scalar('loss', self.__loss)
+            tf.summary.scalar('mean_loss', self.__mean_loss)
 
     def __before_train(self, steps):
         # with the iterations going, the learning rate will be decreased
@@ -110,21 +93,38 @@ class ShallowNN(NN):
         self.init_variables()
         self.merge_summary()
 
-    def __measure(self, X, y, add_summary=True, is_train=True, epoch=None):
-        feed_dict = {self.__X: X, self.__y: y, self.keep_prob: 1.0, self.t_is_train: False}
-        loss, _output = self.sess.run([self.__loss, self.__output], feed_dict)
-        auc = roc_auc_score(y[:, 1], _output[:, 1])
+    def __measure(self, X, y, add_summary=True, epoch=None):
+        batch_size = 100
+        len_x = len(X)
+        cur_index = 0
+
+        mean_loss = 0
+        all_batch_y = []
+        all_batch_output = []
+        times = 0
+
+        while cur_index < len_x:
+            batch_x = X[cur_index: cur_index + batch_size]
+            batch_y = y[cur_index: cur_index + batch_size]
+            cur_index += batch_size
+            times += 1
+
+            feed_dict = {self.__X: batch_x, self.__y: batch_y, self.keep_prob: 1.0, self.t_is_train: False}
+            loss, _output = self.sess.run([self.__loss, self.__output_prob], feed_dict)
+
+            mean_loss += loss
+            all_batch_y.append(batch_y)
+            all_batch_output.append(_output)
+
+        mean_loss /= times
+        mean_auc = roc_auc_score(np.vstack(all_batch_y), np.vstack(all_batch_output))
 
         if not add_summary:
-            return loss, auc
+            return mean_loss, mean_auc
 
-        feed_dict[self.__mean_auc] = auc
-        if is_train:
-            self.add_summary_train(feed_dict, epoch)
-        else:
-            self.add_summary_val(feed_dict, epoch)
-
-        return loss, auc
+        feed_dict = {self.__mean_loss: mean_loss, self.__mean_auc: mean_auc}
+        self.add_summary_val(feed_dict, epoch)
+        return mean_loss, mean_auc
 
     def train(self, data_object, train_x, train_y, val_x, val_y):
         # calculate train steps
@@ -135,7 +135,15 @@ class ShallowNN(NN):
         self.__before_train(steps)
 
         # init some temporary variables
-        best_val_auc = 0.0
+        all_batch_y = []
+        all_batch_output = []
+        mean_loss = 0
+        mean_auc = 0
+
+        _, best_val_auc = self.__measure(val_x, val_y, False)
+        self.echo('best val auc: %f ' % best_val_auc)
+
+        # best_val_auc = 0.0
         decr_val_auc_times = 0
         iter_per_epoch = int((train_size + train_size % self.BATCH_SIZE) // self.BATCH_SIZE)
 
@@ -144,13 +152,16 @@ class ShallowNN(NN):
         # self.__running_std = None
 
         for step in range(steps):
+            # show the progress
             if step % self.SHOW_PROGRESS_FREQUENCY == 0:
                 epoch_progress = float(step) % iter_per_epoch / iter_per_epoch * 100.0
                 step_progress = float(step) / steps * 100.0
                 self.echo('\r step: %d (%d|%.2f%%) / %d|%.2f%% \t\t' % (step, iter_per_epoch, epoch_progress,
                                                                         steps, step_progress), False)
 
+            # get the batch data
             batch_x, batch_y = data_object.next_batch(self.BATCH_SIZE)
+            batch_x = self.transform_one(batch_x)
 
             # self batch normalize
             # reduce_axis = tuple(range(len(batch_x.shape) - 1))
@@ -162,34 +173,58 @@ class ShallowNN(NN):
             #     self.__running_std, type(None)) else _std
             # batch_x = (batch_x - _mean) / (_std + self.EPSILON)
 
+            # run the train operator
             feed_dict = {self.__X: batch_x, self.__y: batch_y, self.keep_prob: self.KEEP_PROB, self.t_is_train: True}
-            self.sess.run(self.__train_op, feed_dict)
+            _, batch_loss, batch_output = self.sess.run([self.__train_op, self.__loss, self.__output_prob], feed_dict)
 
-            # _, batch_loss = self.sess.run([self.__train_op, self.__loss], feed_dict)
-            #
-            # mean_train_loss += batch_loss
-            # mean_train_auc += batch_auc
+            # record the training result
+            all_batch_y.append(batch_y)
+            all_batch_output.append(batch_output)
+            mean_loss += batch_loss
 
+            # after finish a epoch, evaluate the model
             if step % iter_per_epoch == 0 and step != 0:
                 epoch = int(step // iter_per_epoch)
+
+                # for calculating the mean training auc and loss
+                all_batch_y = np.vstack(all_batch_y)
+                all_batch_output = np.vstack(all_batch_output)
+
+                mean_loss /= iter_per_epoch
+                mean_auc = roc_auc_score(all_batch_y, all_batch_output)
 
                 # self.mean_x = self.__running_mean
                 # self.std_x = self.__running_std * (self.BATCH_SIZE / float(self.BATCH_SIZE - 1))
 
-                train_loss, train_auc = self.__measure(train_x, train_y, True, True, epoch)
-                val_loss, val_auc = self.__measure(val_x, val_y, True, False, epoch)
+                # for training tensorboard
+                feed_dict[self.__mean_loss] = mean_loss
+                feed_dict[self.__mean_auc] = mean_auc
+                self.add_summary_train(feed_dict, epoch)
 
+                # train_loss, train_auc = self.__measure(train_x, train_y, True, True, epoch)
+                val_loss, val_auc = self.__measure(val_x, val_y, True, epoch)
+
+                # for showing the result to console
                 self.echo('\nepoch: %d, train_loss: %.6f, train_auc: %.6f, val_loss: %.6f, val_auc: %.6f ' %
-                          (epoch, train_loss, train_auc, val_loss, val_auc))
+                          (epoch, mean_loss, mean_auc, val_loss, val_auc))
 
+                # reinitialize variables
+                mean_loss = 0
+                all_batch_y = []
+                all_batch_output = []
+
+                # decide whether to early stop the training
                 if best_val_auc < val_auc:
+                    # if best result
                     self.echo('best ')
                     best_val_auc = val_auc
                     decr_val_auc_times = 0
 
+                    # save the best model
                     self.save_model_w_b()
                 else:
                     decr_val_auc_times += 1
+                    # if match the early stop conditions, then stop
                     if decr_val_auc_times > self.EARLY_STOP_EPOCH:
                         break
 
@@ -202,17 +237,18 @@ class ShallowNN(NN):
         self.init_variables()
 
     def predict(self, X):
-        return self.sess.run(self.__output, {self.__X: X, self.keep_prob: 1.0, self.t_is_train: False})[:, 1]
+        return self.sess.run(self.__output_prob, {self.__X: X, self.keep_prob: 1.0, self.t_is_train: False})[:, 1]
 
     def save(self):
         return
 
     def test_auc(self, test_x, test_y):
-        output = self.sess.run(self.__output, {self.__X: test_x, self.keep_prob: 1.0, self.t_is_train: False})
+        output = self.sess.run(self.__output_prob, {self.__X: test_x, self.keep_prob: 1.0, self.t_is_train: False})
         auc = roc_auc_score(test_y[:, 1], output[:, 1])
         print('test auc: %f' % auc)
         return auc
 
-    def transform(self, train_x, val_x, test_x, real_test_x, train_y, val_y, test_y):
-        ''' transform data '''
-        return train_x, val_x, test_x, real_test_x, train_y, val_y, test_y
+    def transform_one(self, X):
+        X = np.reshape(X, [X.shape[0], 10, 20])
+        return np.expand_dims(X, axis=-1)
+

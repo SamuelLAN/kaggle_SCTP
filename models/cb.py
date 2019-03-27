@@ -47,3 +47,4 @@ class CB:
         if self.__has_train:
             return
         self.__model.save_model(self.__model_path)
+        print('Finish saving model to %s' % self.__model_path)

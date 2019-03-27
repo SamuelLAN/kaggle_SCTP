@@ -69,8 +69,9 @@ class LGB:
                                               num_leaves=2,
                                               boosting_type='goss',  # 'gbdt',
                                               metric='auc',
-                                              objective='binary',
-                                              # reg_lambda=0.1,
+                                              # objective='binary',
+                                              objective='regression',
+                                              reg_lambda=0.1,
                                               n_jobs=-1)
 
     def train(self, train_x, train_y, val_x, val_y):
@@ -79,7 +80,7 @@ class LGB:
         self.__model.fit(train_x, train_y,
                          eval_set=[(val_x, val_y)],
                          verbose=True,
-                         early_stopping_rounds=1000)
+                         early_stopping_rounds=2000)
 
     def predict(self, X):
         if self.__has_train:
@@ -96,3 +97,4 @@ class LGB:
         if self.__has_train:
             return
         self.__model.booster_.save_model(self.__model_path)
+        print('Finish saving model to %s' % self.__model_path)

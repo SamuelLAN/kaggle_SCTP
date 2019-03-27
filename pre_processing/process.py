@@ -11,6 +11,8 @@ PATH_PRJ = os.path.split(PATH_CUR)[0]
 PATH_TRAIN_DATA = os.path.join(PATH_PRJ, 'dataset', 'train.csv')
 PATH_TEST_DATA = os.path.join(PATH_PRJ, 'dataset', 'test.csv')
 PATH_CACHE_DIR = os.path.join(PATH_CUR, 'cache')
+PATH_ENSEMBLE_TRAIN_DATA = os.path.join(PATH_PRJ, 'ensemble', 'data', 'train.csv')
+PATH_ENSEMBLE_TEST_DATA = os.path.join(PATH_PRJ, 'ensemble', 'data', 'test.csv')
 
 
 class Data:
@@ -60,12 +62,15 @@ class Data:
         # divide the data into trainset, valset, testset
         train_data, val_data, test_data = self.__divide_data(data, train_size, val_size, test_size)
 
-        self.__train_x = np.cast[np.float32](train_data[:, 2:])
-        self.__train_y = np.cast[np.int32](train_data[:, 1])
-        self.__val_x = np.cast[np.float32](val_data[:, 2:]) if val_data.any() else []
-        self.__val_y = np.cast[np.int32](val_data[:, 1]) if val_data.any() else []
-        self.__test_x = np.cast[np.float32](test_data[:, 2:])
-        self.__test_y = np.cast[np.int32](test_data[:, 1])
+        self.__train_ids = train_data[:, 0]
+        self.__train_x = np.cast['float32'](train_data[:, 2:])
+        self.__train_y = np.cast['int32'](train_data[:, 1])
+        self.__val_ids = val_data[:, 0] if val_data.any() else []
+        self.__val_x = np.cast['float32'](val_data[:, 2:]) if val_data.any() else []
+        self.__val_y = np.cast['int32'](val_data[:, 1]) if val_data.any() else []
+        self.__test_ids = test_data[:, 0]
+        self.__test_x = np.cast['float32'](test_data[:, 2:])
+        self.__test_y = np.cast['int32'](test_data[:, 1])
 
         # delete useless data
         del data, train_data, val_data, test_data
@@ -126,9 +131,12 @@ class Data:
 
     def __cache(self):
         ''' cache data after pre-processing '''
+        print('saving data to %s ...' % self.__cache_path)
+
         with open(self.__cache_path, 'wb') as f:
-            pickle.dump((self.__train_x, self.__val_x, self.__test_x,
-                         self.__train_y, self.__val_y, self.__test_y,
+            pickle.dump((self.__train_x, self.__train_y, self.__train_ids,
+                         self.__val_x, self.__val_y, self.__val_ids,
+                         self.__test_x, self.__test_y, self.__test_ids,
                          self.__real_test_x, self.__real_test_ids), f, pickle.HIGHEST_PROTOCOL)
 
     def __use_cache(self):
@@ -139,26 +147,46 @@ class Data:
         with open(self.__cache_path, 'rb') as f:
             data = pickle.load(f)
 
-        # the occasion of "len(data) == 6" is used for updating old cache data
-        if len(data) == 6:
-            self.__train_x, self.__val_x, self.__test_x, self.__train_y, self.__val_y, self.__test_y = data
-            self.__load_test_data()
-        else:
-            self.__train_x, self.__val_x, self.__test_x, self.__train_y, self.__val_y, self.__test_y, \
-            self.__real_test_x, self.__real_test_ids = data
+        self.__train_x, self.__train_y, self.__train_ids, self.__val_x, self.__val_y, self.__val_ids, \
+        self.__test_x, self.__test_y, self.__test_ids, self.__real_test_x, self.__real_test_ids = data
         return True
 
+    @property
     def train_data(self):
         return self.__train_x, self.__train_y
 
+    @property
     def val_data(self):
         return self.__val_x, self.__val_y
 
+    @property
     def test_data(self):
         return self.__test_x, self.__test_y
 
+    @property
     def real_test_data(self):
         return self.__real_test_x, self.__real_test_ids
+
+    @property
+    def ensemble_train_x(self):
+        ids = np.array(
+            np.expand_dims(np.hstack([self.__train_ids, self.__val_ids, self.__test_ids]), -1),
+            dtype='object'
+        )
+        X = np.vstack([self.__train_x, self.__val_x, self.__test_x])
+
+        data = list(np.hstack([self.__test_x, X]))
+        data.sort(key=lambda e: int(e[0].split('_')[1]))
+
+        return np.array(data)[:, 1:]
+
+    # @property
+    # def ensemble_train(self):
+    #     return self.__test_x, self.__test_y
+
+    @property
+    def ensemble_test_x(self):
+        return self.__real_test_x
 
     def next_batch(self, batch_size):
         ''' Get train data batch by batch '''
@@ -175,7 +203,7 @@ class Data:
 
         if not left_num:
             self.__cur_index = end_index if end_index < self.__len else 0
-            return X, np.eye(2, dtype=np.float32)[y]
+            return X, np.eye(2, dtype=np.float32)[np.cast['int32'](y)]
 
         while left_num:
             end_index = left_num
@@ -192,15 +220,100 @@ class Data:
             y = np.hstack([y, left_y])
 
         self.__cur_index = end_index if end_index < self.__len else 0
-        return X, np.eye(2, dtype=np.float32)[y]
+        return X, np.eye(2, dtype=np.float32)[np.cast['int32'](y)]
+
+
+class EnsembleWriteData:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def write(name, output, is_train=True):
+        path = PATH_ENSEMBLE_TRAIN_DATA if is_train else PATH_ENSEMBLE_TEST_DATA
+        with open(path, 'ab') as f:
+            string = name + ',' + list(output).__str__()[1:-1].replace(' ', '') + '\n'
+            f.write(string)
+
+
+class EnsembleReadData:
+    def __init__(self, train_size=0.9, choose_list=[]):
+        # train_size must be limited to 0.0 ~ 1.0
+        self.__train_size = max(min(train_size, 1.0), 0.0)
+        self.__choose_list = []
+
+        print('Start loading the train data ...')
+        self.__load_train()
+        print('Finish loading train data\n\nStart loading test data ...')
+        self.__load_test_data()
+        print('Finish loading test data')
+
+    def __choose_data(self, data):
+        if not self.__choose_list:
+            return data
+        name_list = data[:, 0]
+        choose_data = []
+        for i, name in enumerate(name_list):
+            if name not in self.__choose_list:
+                continue
+            choose_data.append(data[i, :])
+        return np.asarray(choose_data)
+
+    def __load_train(self):
+        data = np.asarray(pd.read_csv(PATH_ENSEMBLE_TRAIN_DATA).iloc[:, :])
+        data = self.__choose_data(data)
+        X = np.transpose(data[:, 1:], axes=[1, 0])
+
+        data = np.asarray(pd.read_csv(PATH_TRAIN_DATA).iloc[:, :])
+        y = np.expand_dims(data[:, 1], axis=-1)
+
+        # add features to X
+        X = np.hstack([X, data[:, 2:]])
+
+        data = np.hstack([X, y])
+        random.shuffle(data)
+
+        len_data = len(data)
+        bounder = int(len_data * self.__train_size)
+
+        self.__train_x = np.asarray(data[:bounder, :-1], dtype=np.float32)
+        self.__train_y = np.asarray(data[:bounder, -1], dtype=np.int32)
+
+        self.__val_x = np.asarray(data[bounder:, :-1], dtype=np.float32)
+        self.__val_y = np.asarray(data[bounder:, -1], dtype=np.int32)
+
+    def __load_test_data(self):
+        print('loading test data ...')
+        data = np.asarray(pd.read_csv(PATH_ENSEMBLE_TEST_DATA).iloc[:, :])
+        data = self.__choose_data(data)
+        self.__test_x = np.asarray(np.transpose(data[:, 1:], axes=[1, 0]), dtype=np.float32)
+
+        data = np.asarray(pd.read_csv(PATH_TEST_DATA).iloc[:, :])
+        self.__test_ids = data[:, 0]
+        self.__test_x = np.hstack([self.__test_x, data[:, 1:]])
+        del data
+        print('finish loading test data')
+
+    @property
+    def train_data(self):
+        return self.__train_x, self.__train_y
+
+    @property
+    def val_data(self):
+        return self.__val_x, self.__val_y
+
+    @property
+    def test_data(self):
+        return self.__test_x, self.__test_ids
 
 
 # from processors import Processors
 #
-# o_data = Data([], cache_name='origin_4_standardization_min_max_scaling', new_cache_name='')
-# train_x, train_y = o_data.train_data()
-# val_x, val_y = o_data.val_data()
-# test_x, test_y = o_data.test_data()
+# o_data = Data([Processors.add_lda], cache_name='origin_7_min_max_scaling_aug_4.0_shuffle_dim_2.0_0.0',
+#               new_cache_name='origin_7_min_max_scaling_aug_4.0_shuffle_dim_2.0_0.0_add_lda')
+#
+# train_x, train_y = o_data.train_data
+# val_x, val_y = o_data.val_data
+# test_x, test_y = o_data.test_data
 #
 # print(train_x.shape)
 # print(train_y.shape)

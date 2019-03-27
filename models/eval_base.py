@@ -9,7 +9,7 @@ PATH_RESULT = os.path.join(PATH_CUR, 'results')
 sys.path.append(PATH_PRJ)
 
 # from models.lgb import LGB
-from pre_processing.process import Data
+from pre_processing.process import Data, EnsembleWriteData
 
 
 class Eval:
@@ -19,11 +19,12 @@ class Eval:
 
     def __init__(self):
         # Load train data
+        # self.data = Data(self.PROCESSOR_LIST, cache_name='origin_7_min_max_scaling', new_cache_name='')
         self.data = Data(self.PROCESSOR_LIST, cache_name=self.DATA_CACHE_NAME, new_cache_name='')
-        self.train_x, self.train_y = self.data.train_data()
-        self.val_x, self.val_y = self.data.val_data()
-        self.test_x, self.test_y = self.data.test_data()
-        self.real_test_x, self.real_test_ids = self.data.real_test_data()
+        self.train_x, self.train_y = self.data.train_data
+        self.val_x, self.val_y = self.data.val_data
+        self.test_x, self.test_y = self.data.test_data
+        self.real_test_x, self.real_test_ids = self.data.real_test_data
 
         self.model_name = '%s_%s' % (self.MODEL_NAME, self.DATA_CACHE_NAME)
         self.init_model()
@@ -58,3 +59,22 @@ class Eval:
             f.write(content)
 
         print('Finish generating csv')
+
+    def gen_ensemble_data(self):
+        print('\nStart generating ensemble data ...')
+
+        ensemble_train_x = self.data.ensemble_train_x
+
+        print('generating ensemble train data ... ')
+
+        # predict train result and save it to the ensemble data
+        train_prob = self.model.predict(ensemble_train_x)
+        EnsembleWriteData.write(self.model_name, train_prob)
+
+        print('generating ensemble test data ... ')
+
+        # predict test result and save it to the ensemble data
+        test_prob = self.model.predict(self.data.ensemble_test_x)
+        EnsembleWriteData.write(self.model_name, test_prob, False)
+
+        print('Finish generating ensemble data')

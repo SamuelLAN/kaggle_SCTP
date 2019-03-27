@@ -15,16 +15,25 @@ from models.cb import CB
 
 
 class EvalML(Eval):
-    MODEL_NAME = 'cb'
-    DATA_CACHE_NAME = 'add_lda_standardization_min_max_scaling'
+    '''
+    Experiments:
+        model: lgb_origin
+        auc:
+    '''
+
+    MODEL_NAME = 'lgb_obj_regression'
+    DATA_CACHE_NAME = 'origin_7_min_max_scaling_aug_4.0_standardization'
     PROCESSOR_LIST = []
 
     def init_model(self):
-        self.model = CB(self.model_name)
-        # self.model = LGB(self.model_name)
+        # self.model = CB(self.model_name)
+        self.model = LGB(self.model_name)
         # self.model = XGB(self.model_name)
 
 
 o_model = EvalML()
 o_model.train()
 o_model.predict()
+# o_model.gen_ensemble_data()
+
+print('\ndone')

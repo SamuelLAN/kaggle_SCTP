@@ -47,6 +47,85 @@ class Processors:
         return train_x, val_x, test_x, train_y, val_y, test_y, real_test_x
 
     @staticmethod
+    def duplicate(train_x, val_x, test_x, train_y, val_y, test_y, real_test_x):
+        ''' Duplicate the minority several times '''
+        # the ratio of sampling minority
+        ratio_duplicate = 4.5
+
+        print('Start duplication ... ')
+
+        ar_augment_x = Sampling.duplicate(train_x, train_y, 1, ratio_duplicate)
+        ar_augment_y = np.ones([len(ar_augment_x), ])
+
+        print('Finish duplication')
+
+        # stack train data and shuffle it
+        train_x, train_y = Processors.__stack_and_shuffle([train_x, ar_augment_x], [train_y, ar_augment_y])
+
+        return train_x, val_x, test_x, train_y, val_y, test_y, real_test_x
+
+    @staticmethod
+    def shuffle_same_dim(train_x, val_x, test_x, train_y, val_y, test_y, real_test_x):
+        ratio_aug_minority = 2.0
+        ratio_aug_majority = 1.0
+
+        print('Start shuffling same dimension and augmentation ... ')
+
+        ar_augment_minor_x = Sampling.shuffle_same_dim(train_x, train_y, 1, ratio_aug_minority)
+        ar_augment_minor_y = np.ones([len(ar_augment_minor_x), ])
+
+        stack_list_x = [train_x, ar_augment_minor_x]
+        stack_list_y = [train_y, ar_augment_minor_y]
+
+        if ratio_aug_majority > 0:
+            ar_augment_major_x = Sampling.shuffle_same_dim(train_x, train_y, 0, ratio_aug_majority)
+            ar_augment_major_y = np.ones([len(ar_augment_major_x), ])
+
+            stack_list_x.append(ar_augment_major_x)
+            stack_list_y.append(ar_augment_major_y)
+
+        print('Finish shuffling and augmentation')
+
+        # stack train data and shuffle it
+        train_x, train_y = Processors.__stack_and_shuffle(stack_list_x, stack_list_y)
+
+        return train_x, val_x, test_x, train_y, val_y, test_y, real_test_x
+
+    @staticmethod
+    def duplicate_shuffle_same_dim(train_x, val_x, test_x, train_y, val_y, test_y, real_test_x):
+        # the ratio of sampling minority
+        ratio_duplicate = 2.0
+        ratio_aug_minority = 2.0
+        ratio_aug_majority = 0.5
+
+        print('Start duplication ... ')
+
+        ar_duplication_x = Sampling.duplicate(train_x, train_y, 1, ratio_duplicate)
+        ar_duplication_y = np.ones([len(ar_duplication_x), ])
+
+        print('Finish duplication\nStart shuffling same dimension and augmentation ... ')
+
+        ar_augment_minor_x = Sampling.shuffle_same_dim(train_x, train_y, 1, ratio_aug_minority)
+        ar_augment_minor_y = np.ones([len(ar_augment_minor_x), ])
+
+        stack_list_x = [train_x, ar_duplication_x, ar_augment_minor_x]
+        stack_list_y = [train_y, ar_duplication_y, ar_augment_minor_y]
+
+        if ratio_aug_majority > 0:
+            ar_augment_major_x = Sampling.shuffle_same_dim(train_x, train_y, 0, ratio_aug_majority)
+            ar_augment_major_y = np.ones([len(ar_augment_major_x), ])
+
+            stack_list_x.append(ar_augment_major_x)
+            stack_list_y.append(ar_augment_major_y)
+
+        print('Finish shuffling and augmentation')
+
+        # stack train data and shuffle it
+        train_x, train_y = Processors.__stack_and_shuffle(stack_list_x, stack_list_y)
+
+        return train_x, val_x, test_x, train_y, val_y, test_y, real_test_x
+
+    @staticmethod
     def smote(train_x, val_x, test_x, train_y, val_y, test_y, real_test_x):
         # the ratio of sampling minority
         ratio_over_sample = 20.0
@@ -59,19 +138,15 @@ class Processors:
 
         print('Finish smote')
 
-        # add the over-sampling data to train data
-        train_x = np.vstack([train_x, synthetic_train_x])
-        train_y = np.hstack([train_y, synthetic_train_y])
-
-        # shuffle train data
-        train_x, train_y = Sampling.shuffle(train_x, train_y)
+        # stack train data and shuffle it
+        train_x, train_y = Processors.__stack_and_shuffle([train_x, synthetic_train_x], [train_y, synthetic_train_y])
 
         return train_x, val_x, test_x, train_y, val_y, test_y, real_test_x
 
     @staticmethod
     def under_sample(train_x, val_x, test_x, train_y, val_y, test_y, real_test_x):
         ''' under sample the majority class '''
-        ratio_major_by_minor = 1.5
+        ratio_major_by_minor = 0.8
         train_x, train_y = Sampling.under_sample(train_x, train_y, 0, ratio_major_by_minor)
         return train_x, val_x, test_x, train_y, val_y, test_y, real_test_x
 
@@ -101,3 +176,13 @@ class Processors:
         test_x = np.hstack([test_x, test_lda])
         real_test_x = np.hstack([real_test_x, real_test_lda])
         return train_x, val_x, test_x, train_y, val_y, test_y, real_test_x
+
+    @staticmethod
+    def __stack_and_shuffle(stack_list_x, stack_list_y):
+        ''' stack train data and shuffle it '''
+        # add the over-sampling data to train data
+        train_x = np.vstack(stack_list_x)
+        train_y = np.hstack(stack_list_y)
+
+        # shuffle train data
+        return Sampling.shuffle(train_x, train_y)

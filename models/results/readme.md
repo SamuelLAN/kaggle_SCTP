@@ -25,6 +25,11 @@ AUC for different dataset:
     add_lda_1: 0.900274(val), 0.900367(test)
     add_lda_1_standardization_min_max_scaling: 0.900274(val), 0.900367(test)
 
+    ---
+
+    origin_7_min_max_scaling_aug_3.0: 0.9029 (test)
+
+
 ----
 
 Model:

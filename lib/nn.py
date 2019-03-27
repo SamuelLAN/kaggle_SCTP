@@ -122,17 +122,17 @@ class NN:
         if not isinstance(self.sess, type(None)):
             self.sess.close()
 
-        # if self.__for_test:
-        #     return
-        #
-        # if platform.system().lower() == 'windows':
-        #     return
-        #
-        # # 判断 tensorboard 是否已经结束；若无, kill it
-        # NN.kill_tensorboard_if_running()
-        # if not isinstance(self.tbProcess, type(None)):
-        #     self.tbProcess.join(10)
-        #     self.tbProcess.terminate()
+            # if self.__for_test:
+            #     return
+            #
+            # if platform.system().lower() == 'windows':
+            #     return
+            #
+            # # 判断 tensorboard 是否已经结束；若无, kill it
+            # NN.kill_tensorboard_if_running()
+            # if not isinstance(self.tbProcess, type(None)):
+            #     self.tbProcess.join(10)
+            #     self.tbProcess.terminate()
 
     ''' 初始化 '''
 
@@ -740,6 +740,7 @@ class NN:
                 'bn': True,         # batch_normalize 默认为 False
                 'padding': 'VALID', # conv 的 padding，默认为 'SAME'; 只支持 'VALID' 或 'SAME'
                 'stride': 2,        # 默认为 1
+                'filter_out': 32,   # 若 shape 已经有了，则 filter_out 不需要设置
             }
         tr_conv: 反卷积(上采样)
             for example:
@@ -1300,3 +1301,14 @@ class NN:
                 f.write("msg: %s\n" % err_msg)
             traceback.print_exc(file=f)
             f.write("\n\n")
+
+    def transform_one(self, X):
+        return X
+
+    def transform(self, train_x, val_x, test_x, real_test_x, train_y, val_y, test_y):
+        # expand dimensions to 4D
+        train_x = self.transform_one(train_x)
+        val_x = self.transform_one(val_x)
+        test_x = self.transform_one(test_x)
+        real_test_x = self.transform_one(real_test_x)
+        return train_x, val_x, test_x, real_test_x, train_y, val_y, test_y
