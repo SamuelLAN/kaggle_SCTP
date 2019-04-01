@@ -205,11 +205,11 @@ class Sampling:
         return np.asarray(ar_synthetic, dtype=np.float32)
 
     @staticmethod
-    def under_sample(X, y, majority_value, ratio_major_by_minor=1.5):
+    def under_sample(X, y, majority_value, ratio_under_sample_major=0.5):
         # calculate the number of majority that need to be sampled
         len_major = np.sum(y == majority_value)
         len_minor = len(y) - len_major
-        len_sample_major = int(len_major * ratio_major_by_minor)
+        len_sample_major = int(len_major * ratio_under_sample_major)
 
         # store the data after under sampling
         new_x = []

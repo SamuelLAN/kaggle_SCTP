@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 import os
 import random
+
 import numpy as np
 import pandas as pd
 from matplotlib import pylab
 from matplotlib import pyplot as plt
-from lib.ml import Cluster, ReduceDim
+
+from old.lib.ml import Cluster, ReduceDim
 
 PATH_CUR = os.path.split(__file__)[0]
 PATH_PRJ = os.path.split(PATH_CUR)[0]
