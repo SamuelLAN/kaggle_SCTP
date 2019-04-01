@@ -24,9 +24,9 @@ def test_data():
     Get original test data
     :return: ID_code, X
     """
-    print('Start Loading original train data ...')
+    print('Start Loading original test data ...')
     data = pd.read_csv(path.PATH_TEST_DATA)
-    print('Finish loading original train data')
+    print('Finish loading original test data')
     return data.values[:, 0], np.cast['float32'](data.values[:, 1:])
 
 
