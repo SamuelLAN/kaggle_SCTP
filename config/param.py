@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 # param for func duplicate
-ratio_duplicate = 4.0
+ratio_duplicate = 1.5
 
 # param for func shuffle_same_dim
 ratio_aug_minority = 2.0
-ratio_aug_majority = 0.0
+ratio_aug_majority = 0.5
 
 # param for func smote
 ratio_smote = 0.2
@@ -16,7 +16,7 @@ ratio_under_sample_major = 0.75
 
 K_FOLD = 5
 
-RANDOM_STATE = 41
+RANDOM_STATE = 42
 
 # for log, record the params
 DATA_PARAMS = {
@@ -26,5 +26,5 @@ DATA_PARAMS = {
     'k_fold': K_FOLD,
     'random_state': RANDOM_STATE,
     'AUG_PROCESSORS': 'augment.duplicate_shuffle_same_dim',
-    'NORM_PROCESSORS': 'norm.min_max_scaling, norm.standardization',
+    'NORM_PROCESSORS': 'norm.min_max_scaling',
 }

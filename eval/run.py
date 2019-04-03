@@ -36,7 +36,7 @@ class Integration:
     # list of functions for data augmentation
     AUG_PROCESSORS = [augment.duplicate_shuffle_same_dim]
     # list of functions for data normalization
-    NORM_PROCESSORS = [norm.min_max_scaling, norm.standardization]
+    NORM_PROCESSORS = [norm.min_max_scaling]
     # list of functions for changing features
     FEAT_PROCESSORS = []
 
